@@ -1,0 +1,434 @@
+# 01. distribution foods in two cohort ####
+### data ####
+# GGMP
+freq_ggmp <- read.csv("food_freq_GGMP.csv",header = T,row.names = 1)
+pheno_ggmp <- read.csv("pheno_GGMP.csv",row.names = 1,header = T)
+#NHANES
+pheno_nhs=read.csv("pheno_NHANES.csv",header = T,row.names = 1)
+freq_nhs=read.csv("food_freq_NHANES.csv",header = T,row.names = 1)
+# 6 shared food：rice,beef,wine,beer,coffee,yogurt
+food6_ggmp <- freq_ggmp[,c("Rice","Yogurt","Beef","Beer","Wine","Coffee")]
+food6_nhs <- freq_nhs[,c("Rice","Yogurt","Beef","Beer","Wine","Coffee")]
+### 15 shared FI  ####
+# AFI
+diet_freq <- food6_ggmp
+row_names <- rownames(diet_freq)
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values + col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+ggmp_AFI15 =result
+
+diet_freq <- food6_nhs
+row_names <- rownames(diet_freq)
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values + col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+nhs_AFI15 =result
+# SFI
+diet_freq <- food6_ggmp
+row_names <- rownames(diet_freq)
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values - col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+ggmp_SFI15 =result
+
+diet_freq <- food6_nhs
+row_names <- rownames(diet_freq)
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values - col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+nhs_SFI15 =result
+### wilcox.test ####
+result <-  data_frame(type=levels(AFI.data$type),p_value=NA)
+for (i in 1:15){
+  result$type[i] <- levels(AFI.data$type)[i]
+  result$p_value[i] <- wilcox.test(freq~group, AFI.data[AFI.data$type==levels(AFI.data$type)[i],])$p.value
+  result$q_vals = p.adjust(result$p_value,method = "BH")
+}
+AFI_pq <- result
+write.csv(AFI_pq,"AFI_pq.csv")
+
+SFI.data$type <- factor(SFI.data$type)
+result <-  data_frame(type=levels(SFI.data$type),p_value=NA)
+for (i in 1:15){
+  result$type[i] <- levels(SFI.data$type)[i]
+  result$p_value[i] <- wilcox.test(freq~group, SFI.data[SFI.data$type==levels(SFI.data$type)[i],])$p.value
+  result$q_vals = p.adjust(result$p_value,method = "BH")
+}
+SFI_pq <- result
+write.csv(SFI_pq,"SFI_pq.csv")
+### SFIG1 ####
+di.data <- rbind(AFI.data,SFI.data)
+di.data$calculation <- c(rep("AFI",dim(AFI.data)[1]),
+                         rep("SFI",dim(SFI.data)[1]))
+SFIG1 <- ggplot(di.data,aes(x = type,y = freq,color = group,fill=group))+
+  geom_jitter()+
+  geom_boxplot()+
+  facet_grid2(calculation~.,scales = "free_y");SFIG1
+### FIG2A ####
+rice_AFI_beer <- AFI.data[AFI.data$type=="rice_AND_beer",]
+FIG2A.1 <- ggplot(rice_AFI_beer, aes(y = group, x = freq)) +
+  geom_half_violin() + 
+  geom_boxplot() +
+  geom_point() 
+rice_SFI_beer <- SFI.data[SFI.data$type=="rice_AND_beer",]  
+FIG2A.2 <- ggplot(rice_SFI_beer, aes(y = group, x = freq)) +
+  geom_half_violin() + 
+  geom_boxplot() +
+  geom_point() 
+yogurt_AFI_beef <- AFI.data[AFI.data$type=="yogurt_AND_beef",]
+FIG2A.3 <- ggplot(yogurt_AFI_beef, aes(y = group, x = freq)) +
+  geom_half_violin() + 
+  geom_boxplot() +
+  geom_point() 
+
+
+
+
+
+
+# 02.NHANES fi_ass_CMT ####
+### data ####
+pheno_nhs=read.csv("pheno_NHANES.csv",header = T,row.names = 1)
+diet_all_nhs = read.csv("food_freq_NHANES.csv",row.names = 1,header=T)
+other_dietaryIndex_nhs = read.csv("other_dietaryIndex_NHANES.csv",row.names = 1,header=T)
+
+discovery <- pheno_nhs[pheno_nhs$set==2,]
+replication <- pheno_nhs[pheno_nhs$set==1,]
+### part1.FI_single ####
+# afi
+row_names <- rownames(diet_freq)
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values + col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+nhs_afi =result
+# sfi
+row_names <- rownames(diet_freq)
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values - col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+nhs_sfi =result
+# ass 
+ass_afi_food=cor_spearman(diet_freq,nhs_afi,c("di","food"))
+ass_sfi_food=cor_spearman(diet_freq,nhs_sfi,c("di","food"))
+write.csv(ass_afi_food,"ass_afi_food.csv")
+write.csv(ass_sfi_food,"ass_sfi_food.csv")
+
+FIG2B.1 <- pheatmap(ass_afi_food)
+FIG2B.2 <- pheatmap(ass_sfi_food)
+### part2.FI_8 other index ####
+ass_afi_odi=cor_spearman(other_dietaryIndex_nhs,nhs_afi,c("di","odi"))
+ass_sfi_odi=cor_spearman(other_dietaryIndex_nhs,nhs_sfi,c("di","odi"))
+write.csv(ass_afi_food,"ass_afi_odi.csv")
+write.csv(ass_sfi_food,"ass_sfi_odi.csv")
+
+FIG2C.1 <- ggplot(ass_afi_odi, aes(x = x, y = y,fill = y,color="white")) +
+  geom_density_ridges()
+
+FIG2C.2 <- ggplot(ass_sfi_odi, aes(x = x, y = y,fill = y,color="white")) +
+  geom_density_ridges()
+### part3.food_CMT ####
+#### 00.1discovery ####
+CMT = discovery[,c("SBP","DBP","Hypertension","Hyperlipidemia","Diabetes","Stroke")]
+covariate = discovery[,c("Age","Sex","BMI","Smoking","Race")]
+ass_single_discovery=cor_spearman(linear_adj_continuous(diet_nhs,covariate),CMT,c("CMT","food"))
+write.csv(ass_single_discovery,"ass_single_discovery.csv")
+#### 00.2replication ####
+CMT = replication[,c("SBP","DBP","Hypertension","Hyperlipidemia","Diabetes","Stroke")]
+covariate = replication[,c("Age","Sex","BMI","Smoking","Race")]
+ass_single_replicate=cor_spearman(linear_adj_continuous(diet_nhs,covariate),CMT,c("CMT","food"))
+write.csv(ass_single_replicate,"ass_single_replicate.csv")
+### part4.fi_CMT####
+#### 00.1discovery ####
+CMT = discovery[,c("SBP","DBP","Hypertension","Hyperlipidemia","Diabetes","Stroke")]
+covariate = discovery[,c("Age","Sex","BMI","Smoking","Race")]
+
+diet_freq <- diet_nhs
+row_names <- rownames(diet_freq)
+#AFI
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values + col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+nh_di_a =result
+#SFI
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values - col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+nh_di_s=result
+
+ass_a=cor_spearman(linear_adj_continuous(nh_di_a,covariate),CMT,c("CMT","di"))
+write.csv(ass_a,"as_dscv_AFI.csv")
+ass_a_sign=ass_a[which(ass_a$Qval<0.05),]
+as_dscv_AFI = ass_a_sign
+
+ass_s=cor_spearman(linear_adj_continuous(nh_di_s,covariate),CMT,c("CMT","di"))
+write.csv(ass_s,"as_dscv_SFI.csv")
+ass_s_sign=ass_s[which(ass_s$Qval<0.05),]
+as_dscv_SFI = ass_s_sign
+
+#### 00.2replication ####
+CMT = replication[,c("SBP","DBP","Hypertension","Hyperlipidemia","Diabetes","Stroke")]
+covariate = replication[,c("Age","Sex","BMI","Smoking","Race")]
+
+diet_freq <- diet_nhs
+row_names <- rownames(diet_freq)
+#AFI
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values + col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+nh_di_a =result
+#SFI
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values - col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+nh_di_s=result
+
+ass_a=cor_spearman(linear_adj_continuous(nh_di_a,covariate),CMT,c("CMT","di"))
+write.csv(ass_s,"as_repl_AFI.csv")
+ass_a_sign=ass_a[which(ass_a$Pval<0.05),]
+as_repl_AFI_p = ass_a_sign
+
+ass_s=cor_spearman(linear_adj_continuous(nh_di_s,covariate),CMT,c("CMT","di"))
+write.csv(ass_s,"as_repl_SFI.csv")
+ass_s_sign=ass_s[which(ass_s$Pval<0.05),]
+as_repl_SFI_p = ass_s_sign
+
+
+
+
+# 03.GGMP fi_ass_CMT ####
+### part0.data ####
+pheno_ggmp=read.csv("pheno_ggmp.csv",header = T,row.names = 1)
+diet_freq = read.csv("food_freq_ggmp.csv",row.names = 1,header=T)
+### part1.FI_single ####
+# afi
+row_names <- rownames(diet_freq)
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values + col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+ggmp_afi =result
+# sfi
+row_names <- rownames(diet_freq)
+result <- data.frame(row.names = row_names)
+for (i in 1:(ncol(diet_freq) - 1)) {
+  for (j in (i + 1):ncol(diet_freq)) {
+    col1 <- names(diet_freq)[i]
+    col2 <- names(diet_freq)[j]
+    subtracted_col <- paste(col1, col2, sep = '_AND_')
+    col1_values <- as.numeric(diet_freq[[col1]])
+    col2_values <- as.numeric(diet_freq[[col2]])
+    subtracted_values <- col1_values - col2_values
+    result[[subtracted_col]] <- subtracted_values
+  }
+}
+ggmp_sfi =result
+# ass 
+ass_afi_food=cor_spearman(diet_freq,ggmp_afi,c("di","food"))
+ass_sfi_food=cor_spearman(diet_freq,ggmp_sfi,c("di","food"))
+write.csv(ass_afi_food,"ass_afi_food.csv")
+write.csv(ass_sfi_food,"ass_sfi_food.csv")
+SFIG2.1 <- pheatmap(ass_afi_food)
+SFIG2.2 <- pheatmap(ass_sfi_food)
+### part2.food_CMT ####
+CMT = pheno_ggmp[,c("SBP","DBP","Hypertension","Hyperlipidemia","Diabetes","Stroke")]
+covariate = pheno_ggmp[,c("Age","Sex","BMI","Smoking")]
+ass_single_ggmp=cor_spearman(linear_adj_continuous(diet_freq,covariate),CMT,c("CMT","food"))
+write.csv(ass_single_ggmp,"ass_single_ggmp.csv")
+### part3.fi_CMT####
+ass_a=cor_spearman(linear_adj_continuous(ggmp_afi,covariate),CMT,c("CMT","di"))
+write.csv(ass_a,"ass_a_ggmp.csv")
+ass_a_sign=ass_a[which(ass_a$Qval<0.05),]
+
+ass_s=cor_spearman(linear_adj_continuous(ggmp_sfi,covariate),CMT,c("CMT","di"))
+write.csv(ass_s,"ass_s_ggmp.csv")
+ass_s_sign=ass_s[which(ass_s$Qval<0.05),]
+
+
+
+# 04.GGMP fi_as_microbe  ####
+### part0.data ####
+pheno_ggmp=read.csv("pheno_ggmp.csv",header = T,row.names = 1)
+diet_freq = read.csv("food_freq_ggmp.csv",row.names = 1,header=T)
+microbe = read.csv("miQTL_genus.csv",row.names = 1)
+AFI =read.csv("AFI_GGMP.csv",row.names = 1)
+SFI=read.csv("SFI_GGMP.csv",row.names = 1)
+### part1.single_microbe ####
+di=diet_freq
+CMT <- pheno[,!(colnames(pheno)%in%c("Age","Sex","BMI","Smoking"))]
+covariate=pheno[,colnames(pheno)%in%c("Age","Sex","BMI","Smoking")]
+di_adj <- linear_adj_continuous(di,covariate)
+mic_adj <- linear_adj_continuous(microbe,covariate)
+ass_single=cor_spearman(mic_adj,di_adj,c("single","microbe"))
+write.csv(ass_single,"ass_single_mic_ggmp.csv")
+SFIG4.1 <- pheatmap(ass_single)
+### part2.AFI_microbe #####
+di=AFI
+covariate=pheno[,colnames(pheno)%in%c("Age","Sex","BMI","Smoking")]
+
+di_adj <- linear_adj_continuous(di,covariate)
+mic_adj <- linear_adj_continuous(microbe,covariate)
+CMT <- pheno[,!(colnames(pheno)%in%c("Age","Sex","BMI","Smoking"))]
+
+ass_afi=cor_spearman(mic_adj,di_adj,c("di","microbe"))
+write.csv(ass_afi,"ass_afi_mic_ggmp.csv")
+SFIG4.2 <- pheatmap(ass_afi)
+### part3.AFI_microbe #####
+di=SFI
+covariate=pheno[,colnames(pheno)%in%c("Age","Sex","BMI","Smoking")]
+
+di_adj <- linear_adj_continuous(di,covariate)
+mic_adj <- linear_adj_continuous(microbe,covariate)
+CMT <- pheno[,!(colnames(pheno)%in%c("Age","Sex","BMI","Smoking"))]
+
+ass_sfi=cor_spearman(mic_adj,di_adj,c("di","microbe"))
+write.csv(ass_sfi,"ass_sfi_mic_ggmp.csv")
+SFIG5.2 <- pheatmap(ass_sfi)
+### part4.merge ####
+ass_sign.data <- rbind(ass_afi[ass_afi$Qval<0.05,],ass_sfi[ass_sfi$Qval<0.05,])
+ass_ass_sign.data$calcultaion(
+  rep("AFI",nrow(ass_afi[ass_afi$Qval<0.05,])),
+  rep("SFI",nrow(ass_sfi[ass_sfi$Qval<0.05,])))
+
+FIG5A <- chordDiagram(ass_ass_sign.data)
+circos.clear()
+
+
+
+# 05.GGMP microbe_as_CMT ####
+### part0.data ####
+pheno_ggmp=read.csv("pheno_ggmp.csv",header = T,row.names = 1)
+microbe = read.csv("miQTL_genus.csv",row.names = 1)
+### part1.single_microbe ####
+CMT <- pheno[,!(colnames(pheno)%in%c("Age","Sex","BMI","Smoking"))]
+covariate=pheno[,colnames(pheno)%in%c("Age","Sex","BMI","Smoking")]
+
+mic_adj <- linear_adj_continuous(microbe,covariate)
+ass_CMT=cor_spearman(mic_adj,CMT,c("CMT","microbe"))
+write.csv(ass_CMT,"ass_CMT_mic_ggmp.csv")
+
+# 06.mediation:FI-microbe-CMT ####
+microbe=read.csv("otu.csv",header = T,row.names = 1)
+CMT=read.csv("CMT.csv",header = T,row.names = 1)
+AFI=read.csv("AFI.csv",header = T,row.names = 1)
+SFI=read.csv("SFI.csv",header = T,row.names = 1)
+#AFI
+data=cbind(microbe,pheno,AFI)
+model.m=lm(AFI~microbe,data)
+model.y=lm(CMT~microbe+AFI,data)
+mediate(model.m,model.y,treat = "X", mediator = "M",boot = T,sims = 1000)
+#SFI
+data=cbind(microbe,pheno,SFI)
+model.m=lm(SFI~microbe,data)
+model.y=lm(CMT~microbe+SFI,data)
+mediate(model.m,model.y,treat = "X", mediator = "M",boot = T,sims = 1000)
+
+
+# 07.mediation:31microbe-pathway-CMT ####
+microbe=read.csv("otu_31.csv",header = T,row.names = 1)
+CMT=read.csv("CMT_ggmp.csv",header = T,row.names = 1)
+pathway=read.csv("pathway.csv",header = T,row.names = 1)
+data=cbind(microbe,pheno,pathway)
+model.m=lm(pathway~microbe,data)
+model.y=lm(CMT~microbe+pathway,data)
+mediate(model.m,model.y,treat = "X", mediator = "M",boot = T,sims = 1000)
+
+over :)
